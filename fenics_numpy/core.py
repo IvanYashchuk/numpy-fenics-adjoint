@@ -93,3 +93,32 @@ def evaluate_vjp(
     )
 
     return dnumpy_inputs
+
+
+def evaluate_jvp(
+    fenics_function: Callable,
+    fenics_templates: Iterable[FenicsVariable],
+    numpy_inputs: Iterable[np.array],
+    Δnumpy_inputs: Iterable[np.array],
+) -> Tuple[np.array]:
+    """Computes the primal FEniCS function together with the corresponding tangent linear model.
+    Note that Δnumpy_inputs are sometimes referred to as tangent vectors.
+    """
+
+    numpy_output, fenics_output, fenics_inputs, tape = evaluate_primal(
+        fenics_function, fenics_templates, *numpy_inputs
+    )
+
+    # Now tangent (pushforward) evaluation!
+    tape.reset_variables()
+
+    Δfenics_inputs = convert_all_to_fenics(fenics_inputs, *Δnumpy_inputs)
+    for fi, Δfi in zip(fenics_inputs, Δfenics_inputs):
+        fi.block_variable.tlm_value = Δfi
+
+    tape.evaluate_tlm()
+
+    dfenics_output = fenics_output.block_variable.tlm_value
+    dnumpy_output = fenics_to_numpy(dfenics_output)
+
+    return numpy_output, dnumpy_output

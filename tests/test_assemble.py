@@ -7,7 +7,7 @@ import ufl
 
 import fdm
 
-from fenics_numpy import evaluate_primal, evaluate_vjp
+from fenics_numpy import evaluate_primal, evaluate_vjp, evaluate_jvp
 from fenics_numpy import fenics_to_numpy, numpy_to_fenics
 
 
@@ -57,3 +57,19 @@ def test_vjp_assemble_eval():
     check2 = np.allclose(vjp_out[1], fdm_jac1)
     check3 = np.allclose(vjp_out[2], fdm_jac2)
     assert check1 and check2 and check3
+
+
+def test_jvp_assemble_eval():
+    primals = inputs
+    tangent0 = np.random.normal(size=(V.dim(),))
+    tangent1 = np.random.normal(size=(1,))
+    tangent2 = np.random.normal(size=(1,))
+    tangents = (tangent0, tangent1, tangent2)
+
+    fdm_jvp0 = fdm.jvp(ff0, tangents[0])(primals[0])
+    fdm_jvp1 = fdm.jvp(ff1, tangents[1])(primals[1])
+    fdm_jvp2 = fdm.jvp(ff2, tangents[2])(primals[2])
+
+    _, out_tangent = evaluate_jvp(assemble_fenics, templates, primals, tangents)
+
+    assert np.allclose(fdm_jvp0 + fdm_jvp1 + fdm_jvp2, out_tangent)
