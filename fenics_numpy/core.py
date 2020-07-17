@@ -74,11 +74,11 @@ def vjp_fem_eval(
     fenics_output.block_variable.adj_value = adj_value
     with tape.marked_nodes(fenics_inputs):
         tape.evaluate_adj(markings=True)
-    fenics_grads = [fi.block_variable.adj_value for fi in fenics_inputs]
+    fenics_grads = (fi.block_variable.adj_value for fi in fenics_inputs)
 
     # Convert FEniCS gradients to NumPy array representation
-    numpy_grads = [
+    numpy_grads = tuple(
         None if fg is None else np.asarray(fenics_to_numpy(fg)) for fg in fenics_grads
-    ]
+    )
 
     return numpy_grads
