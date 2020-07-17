@@ -6,12 +6,12 @@ import warnings
 
 from typing import Type, List, Union, Iterable, Callable, Tuple
 
-FenicsVariable = Union[fenics.Constant, fenics.Function]
+FenicsVariable = Union[fenics.Constant, fenics.Function, pyadjoint.AdjFloat]
 
 
-def fenics_to_numpy(fenics_var):
+def fenics_to_numpy(fenics_var: FenicsVariable) -> np.array:
     """Convert FEniCS variable to numpy array.
-    Serializes the input so that all processes have the same data."""
+    Serializes the input so that all MPI ranks have the same data."""
     if isinstance(fenics_var, fenics.Constant):
         return np.asarray(fenics_var.values())
 
@@ -36,8 +36,17 @@ def fenics_to_numpy(fenics_var):
     raise ValueError("Cannot convert " + str(type(fenics_var)))
 
 
-def numpy_to_fenics(numpy_array, fenics_var_template):  # noqa: C901
-    """Convert numpy array to FEniCS variable"""
+def numpy_to_fenics(
+    numpy_array: np.array, fenics_var_template: FenicsVariable
+) -> FenicsVariable:  # noqa: C901
+    """Convert numpy array to FEniCS variable.
+    Distributes the input array across MPI ranks.
+    Input:
+        numpy_array (np.array): NumPy array to be converted to FEniCS type
+        fenics_var_template (FenicsVariable): Templates for converting arrays to FEniCS type
+    Output:
+        fenucs_output (FenicsVariable): FEniCS representation of the input numpy_array
+    """
 
     if isinstance(fenics_var_template, fenics.Constant):
         if numpy_array.shape == (1,):
@@ -120,7 +129,7 @@ def check_input(fenics_templates: FenicsVariable, *args: FenicsVariable) -> None
 
 
 def convert_all_to_fenics(
-    fenics_templates: FenicsVariable, *args: np.array
+    fenics_templates: Iterable[FenicsVariable], *args: np.array
 ) -> List[FenicsVariable]:
     """Converts input array to corresponding FEniCS variables"""
     fenics_inputs = []
