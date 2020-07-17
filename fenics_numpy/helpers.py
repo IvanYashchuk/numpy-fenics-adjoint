@@ -95,7 +95,7 @@ def numpy_to_fenics(
 def get_numpy_input_templates(
     fenics_input_templates: Iterable[FenicsVariable],
 ) -> List[np.array]:
-    """Returns tuple of numpy representations of the input templates to FEniCSFunctional.forward"""
+    """Returns a list of numpy representations of the input templates"""
     numpy_input_templates = [fenics_to_numpy(x) for x in fenics_input_templates]
     return numpy_input_templates
 
