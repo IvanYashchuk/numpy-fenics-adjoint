@@ -18,7 +18,7 @@ from .helpers import FenicsVariable
 from typing import Type, List, Union, Iterable, Callable, Tuple
 
 
-def fem_eval(
+def evaluate_primal(
     fenics_function: Callable,
     fenics_templates: Iterable[FenicsVariable],
     *args: np.array,
@@ -50,35 +50,46 @@ def fem_eval(
     return numpy_output, fenics_output, fenics_inputs, tape
 
 
-def vjp_fem_eval(
-    g: np.array,
+# Below unicode symbols are used to distinguish between input and ouput sensitivities
+# See http://www.juliadiff.org/ChainRules.jl/dev/FAQ.html
+# Δx is the input to a propagator, (i.e a seed for a pullback; or a perturbation for a pushforward)
+# ∂x is the output of a propagator
+# dx could be either
+# Here dx is used for the output of a propagator since ∂x is not a valid name for python variables
+
+
+def evaluate_vjp(
+    dnumpy_output: np.array,
     fenics_output: FenicsVariable,
     fenics_inputs: Iterable[FenicsVariable],
     tape: pyadjoint.Tape,
 ) -> Tuple[np.array]:
     """Computes the gradients of the output with respect to the inputs.
     Input:
-        g (np.array): NumPy array representation of the tangent covector to multiply transposed jacobian with
+        Δfenics_output (np.array): NumPy array representation of the tangent covector to multiply transposed jacobian with
         fenics_output (AdjFloat or Function): FEniCS representation of the output from fenics_function(*fenics_inputs)
         fenics_inputs (list of FenicsVariable): FEniCS representation of the input args
         tape (pyadjoint.Tape): pyadjoint's saved computational graph
     Output:
-        numpy_grads (list of np.array): NumPy array representation of the `g` times jacobian of fenics_function(*fenics_inputs) wrt to every fenics_input
+        dnumpy_inputs (list of np.array):
+            NumPy array representation of the `Δfenics_output` times jacobian
+            of fenics_function(*fenics_inputs) wrt to every fenics_input
     """
     # Convert tangent covector (adjoint variable) to a FEniCS variable
-    adj_value = numpy_to_fenics(g, fenics_output)
-    if isinstance(adj_value, (fenics.Function, fenics_adjoint.Function)):
-        adj_value = adj_value.vector()
+    Δfenics_output = numpy_to_fenics(dnumpy_output, fenics_output)
+    if isinstance(Δfenics_output, (fenics.Function, fenics_adjoint.Function)):
+        Δfenics_output = Δfenics_output.vector()
 
     tape.reset_variables()
-    fenics_output.block_variable.adj_value = adj_value
+    fenics_output.block_variable.adj_value = Δfenics_output
     with tape.marked_nodes(fenics_inputs):
         tape.evaluate_adj(markings=True)
-    fenics_grads = (fi.block_variable.adj_value for fi in fenics_inputs)
+    dfenics_inputs = (fi.block_variable.adj_value for fi in fenics_inputs)
 
     # Convert FEniCS gradients to NumPy array representation
-    numpy_grads = tuple(
-        None if fg is None else np.asarray(fenics_to_numpy(fg)) for fg in fenics_grads
+    dnumpy_inputs = tuple(
+        None if dfi is None else np.asarray(fenics_to_numpy(dfi))
+        for dfi in dfenics_inputs
     )
 
-    return numpy_grads
+    return dnumpy_inputs
