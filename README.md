@@ -1,8 +1,12 @@
+# This project is archived
+
+The development of this package was moved to another repository. Please check out [Finite Element Chain Rules](https://github.com/IvanYashchuk/fecr). In addition to supporting [FEniCS](https://fenicsproject.org/) it also supports [Firedrake](https://firedrakeproject.org/).
+
 # numpy-fenics-adjoint &middot; [![Build](https://github.com/ivanyashchuk/numpy-fenics-adjoint/workflows/CI/badge.svg)](https://github.com/ivanyashchuk/numpy-fenics-adjoint/actions?query=workflow%3ACI+branch%3Amaster) [![Coverage Status](https://coveralls.io/repos/github/IvanYashchuk/numpy-fenics-adjoint/badge.svg?branch=master)](https://coveralls.io/github/IvanYashchuk/numpy-fenics-adjoint?branch=master)
 Easy interoperability with Automatic Differentiation libraries through NumPy interface to FEniCS.
 
 ## Overview
-This package provides a high-level interface for evaluating derivatives of [FEniCS](http://fenicsproject.org) models.
+This package provides a high-level interface for evaluating derivatives of [FEniCS](https://fenicsproject.org/) models.
 It is intended to be used as the backend for extending Automatic Differentiation libraries to support FEniCS solvers.
 
 Automatic tangent linear and adjoint solvers for FEniCS problems are derived with [dolfin-adjoint/pyadjoint](http://www.dolfin-adjoint.org/en/latest/).
